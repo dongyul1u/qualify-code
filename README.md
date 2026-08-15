@@ -1,11 +1,15 @@
-# Qualify Active Learning Code
+# Qualify Code
 
-This folder contains the main experiment code for the qualify-related active learning study.
+This folder has two entry files with different run environments.
 
-## Main components
+## HPC
 
-- `HyperparamConfig`: stores the key experiment hyperparameters and weighting settings.
-- `EnhancedQuantumSamplingCircuit`: defines the quantum-inspired sampling circuit and entropy-based scoring logic.
-- `TraditionalModels`: trains the classical baseline models used for comparison.
-- `run_active_learning_experiment(...)`: the main entry point that runs the active learning loop and returns experiment results.
+`qualify_code.py` is the experiment script. Run this on HPC.
 
+`qualify_code.py` runs the experiments, saves the raw results, and generates part of the result-analysis figures.
+
+## Local
+
+`result_analysis.py` is the local replot and result-analysis script. Run this on your local machine.
+
+`result_analysis.py` is used to make fuller use of the experiment results. The figures and tables used for analysis in the experiment mainly come from this script.
