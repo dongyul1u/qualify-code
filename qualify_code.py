@@ -1070,7 +1070,7 @@ def run_active_learning_experiment(X, y, model_name, strategy="random",
 
         elif strategy == "coreset":
             batch = farthest_first_select(
-                unlabeled_idx.tolist(), X_pool, labeled_idx.tolist(), k_actual, metric='euclidean'
+                X_pool, unlabeled_idx.tolist(), labeled_idx.tolist(), k_actual, metric="euclidean"
             )
 
         elif strategy == "badge":
