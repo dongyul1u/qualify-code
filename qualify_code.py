@@ -474,67 +474,61 @@ def structure_diversity_score(x, labeled_X, metric='euclidean'):
     return float(np.min(dists))
 
 
-def farthest_first_select(candidates, X, already_selected, k, metric='euclidean'):
-    selected = []
-    if len(candidates) == 0 or k <= 0:
-        return selected
-        
-    if len(already_selected) == 0:
-        if metric == 'euclidean':
-            norms = [np.linalg.norm(X[i]) for i in candidates]
-        elif metric == 'manhattan':
-            norms = [np.sum(np.abs(X[i])) for i in candidates]
-        else:
-            norms = [np.linalg.norm(X[i]) for i in candidates]
-        selected.append(int(candidates[np.argmax(norms)]))
-    else:
-        dmins = []
+
+def farthest_first_select(X, candidates, already_selected, k, metric="euclidean"):
+    candidates = np.asarray(candidates, dtype=int)
+    already_selected = np.asarray(already_selected, dtype=int)
+
+    if k <= 0 or len(candidates) == 0:
+        return []
+
+    if metric != "euclidean":
+        raise ValueError(f"Unsupported metric: {metric}")
+
+    # Initial minimum distance from every candidate
+    # to the EXISTING labeled set
+    if len(already_selected) > 0:
         L = X[already_selected]
-        for i in candidates:
-            if metric == 'euclidean':
-                d = np.min(np.linalg.norm(L - X[i], axis=1))
-            elif metric == 'cosine':
-                norm_i = np.linalg.norm(X[i])
-                norm_L = np.linalg.norm(L, axis=1)
-                dots = np.dot(L, X[i])
-                with np.errstate(divide='ignore', invalid='ignore'):
-                    cos_sim = dots / (norm_L * norm_i)
-                    cos_sim = np.clip(cos_sim, -1, 1)
-                d = 1 - np.max(cos_sim)
-            elif metric == 'manhattan':
-                d = np.min(np.abs(L - X[i]).sum(axis=1))
-            else:
-                d = np.min(np.linalg.norm(L - X[i], axis=1))
-            dmins.append(d)
-        selected.append(int(candidates[np.argmax(dmins)]))
-        
-    while len(selected) < min(k, len(candidates)):
-        dmins = []
-        S = X[selected]
-        for i in candidates:
-            if i in selected:
-                dmins.append(-np.inf)
-                continue
-            if metric == 'euclidean':
-                d = np.min(np.linalg.norm(S - X[i], axis=1))
-            elif metric == 'cosine':
-                norm_i = np.linalg.norm(X[i])
-                norm_S = np.linalg.norm(S, axis=1)
-                dots = np.dot(S, X[i])
-                with np.errstate(divide='ignore', invalid='ignore'):
-                    cos_sim = dots / (norm_S * norm_i)
-                    cos_sim = np.clip(cos_sim, -1, 1)
-                d = 1 - np.max(cos_sim)
-            elif metric == 'manhattan':
-                d = np.min(np.abs(S - X[i]).sum(axis=1))
-            else:
-                d = np.min(np.linalg.norm(S - X[i], axis=1))
-            dmins.append(d)
-        nxt = int(candidates[np.argmax(dmins)])
-        if nxt in selected:
+
+        min_distances = np.array([
+            np.min(np.linalg.norm(L - X[i], axis=1))
+            for i in candidates
+        ])
+    else:
+        min_distances = np.full(len(candidates), np.inf)
+
+    selected = []
+    available = np.ones(len(candidates), dtype=bool)
+
+    for _ in range(min(k, len(candidates))):
+
+        available_idx = np.where(available)[0]
+
+        if len(available_idx) == 0:
             break
-        selected.append(nxt)
-        
+
+        # Select the point farthest from the CURRENT represented set
+        pos = available_idx[
+            np.argmax(min_distances[available_idx])
+        ]
+
+        chosen = candidates[pos]
+        selected.append(chosen)
+        available[pos] = False
+
+        # The new selected point is now part of the represented set.
+        # Update each remaining candidate's distance to L ∪ selected.
+        for j in np.where(available)[0]:
+
+            d_new = np.linalg.norm(
+                X[candidates[j]] - X[chosen]
+            )
+
+            min_distances[j] = min(
+                min_distances[j],
+                d_new
+            )
+
     return selected
 
 
